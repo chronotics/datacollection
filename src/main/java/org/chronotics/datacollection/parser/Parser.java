@@ -4,5 +4,5 @@ import java.io.File;
 
 public interface Parser {
     public void parse();
-    public void parse(File file);
+    public boolean parse(File file);
 }

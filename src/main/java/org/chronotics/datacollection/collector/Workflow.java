@@ -29,9 +29,10 @@ public class Workflow {
     }
 
     /**
-     *  get scanned list in fileInfoMap. get all files in specific status.
-     *  if fileStatus is null, get the total fileInfoMap
-     * @param fileStatus : FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.PARSED,FILE_STATUS.DOWNLOADED
+     * get scanned list in fileInfoMap. get all files in specific status.
+     * if fileStatus is null, get the total fileInfoMap
+     *
+     * @param fileStatus FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.PARSED,FILE_STATUS.DOWNLOADED
      * @return Key will be filepath + filename
      */
     public Map<String, FileInfo> getScannedList(FILE_STATUS fileStatus) {
@@ -53,7 +54,8 @@ public class Workflow {
      * get the list of specific status.
      * After downloading, file will be added to fileStatusList.
      * and the elements will be removed after called.
-     * @param fileStatus : FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.PARSED,FILE_STATUS.DOWNLOADED
+     *
+     * @param fileStatus FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.PARSED,FILE_STATUS.DOWNLOADED
      * @return list of FileInfo which status is parameter 'fileStatus'
      */
     public List<FileInfo> getFileStatusList(FILE_STATUS fileStatus) {
@@ -75,6 +77,7 @@ public class Workflow {
     /**
      * Execute the scanning thread. if the process is not ended when the method called,
      * it returns old scanned list
+     *
      * @param agent
      * @return Key will be filepath + filename
      */
@@ -95,10 +98,11 @@ public class Workflow {
 
     /**
      * Execute download thread
+     *
      * @param agent
      * @param targetFile
      * @param downloadPath
-     * @param fileType ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
+     * @param fileType     ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
      */
     public void download(Agent agent, FileInfo targetFile, String downloadPath, Integer fileType) {
         Downloader downloader = new Downloader(targetFile, agent, downloadPath, fileType);
@@ -107,10 +111,11 @@ public class Workflow {
 
     /**
      * Execute download thread, and running parsing after downloading end
+     *
      * @param targetFile
      * @param agent
      * @param downloadPath
-     * @param fileType ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
+     * @param fileType     ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
      * @param parser
      */
     public void downAndParse(FileInfo targetFile, Agent agent, String downloadPath, Integer fileType, Parser parser) {
@@ -208,8 +213,13 @@ public class Workflow {
             targetFile.setStatus(FILE_STATUS.DOWNLOADING.toString());
             File file = agent.downLoadFile(targetFile, downloadPath, fileType);
             if (parser != null && file != null) {
-                targetFile.setStatus(FILE_STATUS.PARSED.toString());
-                parser.parse(file); //set file status - IMPORTED in parser class
+                targetFile.setStatus(FILE_STATUS.PARSING.toString());
+                boolean parseChk=parser.parse(file);
+                if(parseChk){
+                   targetFile.setStatus(FILE_STATUS.PARSED.toString());
+                }else{
+                    targetFile.setStatus(FILE_STATUS.ERROR.toString());
+                }
             }
             agentMap.remove(agent);
             return null;

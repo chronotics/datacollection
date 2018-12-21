@@ -27,13 +27,13 @@ public class WorkflowScheduler {
     private Workflow workflow;
     private FtpClient scanFtpClient;
 
-
     /**
-     *  running thread every "fixDelayString" millisecond
-     *  if scanning is not finished, return the old-list(latest finished scanning output)
+     * <Scheduler example>
+     * running thread every "fixDelayString" millisecond
+     * if scanning is not finished, return the old-list(latest finished scanning output)
      */
     @Scheduled(fixedDelayString = "1000")
-    public void workflowScanner(){
+    public void workflowScanner() {
         if (workflow == null) {
             workflow = new Workflow(path);
         }
@@ -49,19 +49,22 @@ public class WorkflowScheduler {
             return;
         }
 
-        int i=1;
-        for(String key : scanListMap.keySet()){
+        int i = 1;
+        for (String key : scanListMap.keySet()) {
             System.out.println(scanListMap.get(key));
-            if(i==10){break;}
+            if (i == 10) {
+                break;
+            }
             i++;
         }
-
     }
 
     /**
-     *  Containing scanning, downloading process
+     * <Scheduler example>
+     * running thread every "fixDelayString" millisecond
+     * Containing scanning, downloading process
      */
-//    @Scheduled(fixedDelayString = "1000")
+    @Scheduled(fixedDelayString = "1000")
     public void workflowFull() {
         if (workflow == null) {
             workflow = new Workflow(path);
@@ -78,13 +81,12 @@ public class WorkflowScheduler {
             return;
         }
         /**
-         *  Downloading
-         *      - newly created FtpClient is needed
+         *  Downloading(newly created FtpClient is needed)
          */
         List<FileInfo> downloadList = downloadListSetting(scanListMap);
         for (FileInfo fileInfo : downloadList) {
             FtpClient downFtpClient = new FtpClient(ip, port, user, pwd, false);
-            workflow.download(downFtpClient, fileInfo, downloadPath,2);
+            workflow.download(downFtpClient, fileInfo, downloadPath, 2);
         }
 
         /**
@@ -92,7 +94,7 @@ public class WorkflowScheduler {
          */
         List<FileInfo> downloadedList = workflow.getFileStatusList(FILE_STATUS.DOWNLOADED);
         System.out.println("downloaded List : ");
-        for(FileInfo f : downloadedList){
+        for (FileInfo f : downloadedList) {
             System.out.println(f);
         }
 
@@ -100,11 +102,9 @@ public class WorkflowScheduler {
         System.out.println("scanList :");
 
         for (Map.Entry<String, FileInfo> entry : workflow.getScannedList(FILE_STATUS.DOWNLOADED).entrySet()) {
-                System.out.println(entry.getValue());
+            System.out.println(entry.getValue());
         }
     }
-
-
 
     public List<FileInfo> downloadListSetting(Map<String, FileInfo> scanListMap) {
         List<FileInfo> downloadList = new ArrayList<>();

@@ -4,17 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class FileInfo {
 
-    @Override
-    public String toString() {
-        return "FileInfo{" +
-                "id='" + id + '\'' +
-                ", path='" + path + '\'' +
-                ", name='" + name + '\'' +
-                ", size=" + size +
-                ", status='" + status + '\'' +
-                '}';
-    }
-
     public static enum FILE_STATUS {
         CREATING("CREATING"),
         DOWNLOADING("DOWNLOADING"),
@@ -34,7 +23,6 @@ public class FileInfo {
         }
     }
 
-    @JsonProperty("_id")
     private String id;
     private String path; // path of parent folder
     private String name;
@@ -108,4 +96,16 @@ public class FileInfo {
     public void setStatus(String status) {
         this.status = status;
     }
+
+    @Override
+    public String toString() {
+        return "FileInfo{" +
+                "id='" + id + '\'' +
+                ", path='" + path + '\'' +
+                ", name='" + name + '\'' +
+                ", size=" + size +
+                ", status='" + status + '\'' +
+                '}';
+    }
+
 }

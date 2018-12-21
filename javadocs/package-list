@@ -1,0 +1,5 @@
+datacollection
+org.chronotics.datacollection
+org.chronotics.datacollection.collector
+org.chronotics.datacollection.model
+org.chronotics.datacollection.parser

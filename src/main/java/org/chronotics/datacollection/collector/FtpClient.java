@@ -26,11 +26,10 @@ public class FtpClient implements Agent {
     private FTPClient ftp;
 
     /**
-     *
-     * @param ip FTP server Ip
-     * @param port FTP server port
-     * @param user FTP user Id
-     * @param pwd FTP user password
+     * @param ip              FTP server Ip
+     * @param port            FTP server port
+     * @param user            FTP user Id
+     * @param pwd             FTP user password
      * @param commandListener true : commandListener mode (write every ftp command on console)
      */
     public FtpClient(String ip,
@@ -48,6 +47,7 @@ public class FtpClient implements Agent {
 
     /**
      * make connection with FTP server
+     *
      * @return
      */
     public boolean connect() {
@@ -79,6 +79,7 @@ public class FtpClient implements Agent {
 
     /**
      * check the connection is valid
+     *
      * @return
      */
     public boolean isConnected() {
@@ -93,6 +94,7 @@ public class FtpClient implements Agent {
 
     /**
      * set the connection timeout of FTP Client (set before connection)
+     *
      * @param connectTimeOut
      */
     public void setConnectTimeOut(int connectTimeOut) {
@@ -101,6 +103,7 @@ public class FtpClient implements Agent {
 
     /**
      * set the encoding type of FTP Client Connection (set before connection)
+     *
      * @param encoding
      */
     public void setEncoding(String encoding) {
@@ -110,6 +113,7 @@ public class FtpClient implements Agent {
 
     /**
      * set the file type of FTP Server (set after connection)
+     *
      * @param fileType ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
      */
     public void setFileType(int fileType) {
@@ -135,6 +139,7 @@ public class FtpClient implements Agent {
 
     /**
      * get sub-folders information one depth under the path(parameter)
+     *
      * @param path target folder path
      * @return folder information map. key will be path + folderName
      */
@@ -159,7 +164,7 @@ public class FtpClient implements Agent {
         for (FTPFile f : fileList) {
             if (f.isFile()) {
 
-            } else if(f.isDirectory()) {
+            } else if (f.isDirectory()) {
                 String targetPath = String.format("%s/%s", path, f.getName());
                 long[] sizeAndNumFiles = {0, 0};
                 getSubFileInfo(
@@ -181,9 +186,10 @@ public class FtpClient implements Agent {
     /**
      * get sub-files information under the path.
      * It contains all files in the sub-folders under the path.
-     * @param fileInfoMap  input is empty map. during the method, scanned file will be added.
-     *                     key will be path + filename
-     * @param path  target folder path
+     *
+     * @param fileInfoMap     input is empty map. during the method, scanned file will be added.
+     *                        key will be path + filename
+     * @param path            target folder path
      * @param sizeAndNumFiles for getting the size and file counts of getSubFolderInfo()
      *                        long[0] : file size, long[1] : fileCount.
      * @return
@@ -218,7 +224,7 @@ public class FtpClient implements Agent {
                                     FILE_STATUS.CREATING);
                     fileInfoMap.put(targetPath, fileInfo);
                 }
-                if(sizeAndNumFiles!=null){
+                if (sizeAndNumFiles != null) {
                     sizeAndNumFiles[0] += f.getSize();
                     sizeAndNumFiles[1] += 1;
                 }
@@ -233,6 +239,7 @@ public class FtpClient implements Agent {
 
     /**
      * get the file list under the path (not all depth, only one depth)
+     *
      * @param path target folder path
      * @return list of scanned file information
      */
@@ -262,19 +269,20 @@ public class FtpClient implements Agent {
 
     /**
      * download one file
+     *
      * @param fileInfo
      * @param downFilePath
-     * @param fileType ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
+     * @param fileType     ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
      * @return downloaded file information (as File instance)
      */
-    public File downLoadFile(FileInfo fileInfo, String downFilePath,Integer fileType) {
+    public File downLoadFile(FileInfo fileInfo, String downFilePath, Integer fileType) {
         if (!isConnected()) {
             boolean connection = connect();
             if (!connection) {
                 return null;
             }
         }
-        if(fileType!=null){
+        if (fileType != null) {
             setFileType(fileType);
         }
         String target = String.format("%s/%s", fileInfo.getPath(), fileInfo.getName());
@@ -290,6 +298,7 @@ public class FtpClient implements Agent {
                 logger.error("download fail");
                 // The ftpClient is an inconsistent state. Must close the stream
                 // which in turn will logout and disconnect from FTP server
+                fileInfo.setStatus(FILE_STATUS.ERROR.toString());
                 fos.close();
             } else {
                 fileInfo.setStatus(FILE_STATUS.DOWNLOADED.toString());
@@ -318,6 +327,7 @@ public class FtpClient implements Agent {
 
     /**
      * get FTP Server reply
+     *
      * @param ftp
      * @return
      */
