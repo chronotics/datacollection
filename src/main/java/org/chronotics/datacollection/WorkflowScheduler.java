@@ -49,14 +49,6 @@ public class WorkflowScheduler {
             return;
         }
 
-        int i = 1;
-        for (String key : scanListMap.keySet()) {
-            System.out.println(scanListMap.get(key));
-            if (i == 10) {
-                break;
-            }
-            i++;
-        }
     }
 
     /**
@@ -93,28 +85,18 @@ public class WorkflowScheduler {
          *  get the downloaded file list
          */
         List<FileInfo> downloadedList = workflow.getFileStatusList(FILE_STATUS.DOWNLOADED);
-        System.out.println("downloaded List : ");
-        for (FileInfo f : downloadedList) {
-            System.out.println(f);
-        }
 
-        System.out.println();
-        System.out.println("scanList :");
 
-        for (Map.Entry<String, FileInfo> entry : workflow.getScannedList(FILE_STATUS.DOWNLOADED).entrySet()) {
-            System.out.println(entry.getValue());
-        }
+
     }
 
     public List<FileInfo> downloadListSetting(Map<String, FileInfo> scanListMap) {
         List<FileInfo> downloadList = new ArrayList<>();
-        System.out.println("downloadList : ");
         int i = 1;
         for (FileInfo fileInfo : scanListMap.values()) {
             if (!fileInfo.getStatus().equals(FILE_STATUS.DOWNLOADED.toString())
                     && !fileInfo.getStatus().equals(FILE_STATUS.DOWNLOADING.toString())) {
                 downloadList.add(fileInfo);
-                System.out.println(fileInfo);
                 if (i == 10) {
                     break;
                 }
