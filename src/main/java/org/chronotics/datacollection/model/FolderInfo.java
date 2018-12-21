@@ -1,6 +1,7 @@
 package org.chronotics.datacollection.model;
 
 public class FolderInfo {
+    private String id;
     private String path; // path of parent folder
     private String name; // folder name
     private long size;
@@ -50,6 +51,15 @@ public class FolderInfo {
         this.numOfSubFiles = numOfSubFiles;
     }
 
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+
     @Override
     public String toString() {
         return "FolderInfo{" +
@@ -59,4 +69,5 @@ public class FolderInfo {
                 ", numOfSubFiles=" + numOfSubFiles +
                 '}';
     }
+
 }
