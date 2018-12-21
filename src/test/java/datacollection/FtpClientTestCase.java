@@ -62,8 +62,7 @@ public class FtpClientTestCase {
         FtpClient ftpClient=new FtpClient(ip,port,user,pwd,false);
         ftpClient.setEncoding("utf-8");
         Map<String,FileInfo> inputMap=new HashMap<>();
-        long[] inputArr={0l,0l};
-        inputArr=ftpClient.getSubFileInfo(inputMap,"/",inputArr);
+        ftpClient.getSubFileInfo(inputMap,"/",null);
 
         int i=1;
         for(String key : inputMap.keySet()){

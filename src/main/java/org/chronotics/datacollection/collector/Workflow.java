@@ -29,9 +29,10 @@ public class Workflow {
     }
 
     /**
-     *  get scanned list in fileInfoMap.
-     * @param fileStatus
-     * @return
+     *  get scanned list in fileInfoMap. get all files in specific status.
+     *  if fileStatus is null, get the total fileInfoMap
+     * @param fileStatus : FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.PARSED,FILE_STATUS.DOWNLOADED
+     * @return Key will be filepath + filename
      */
     public Map<String, FileInfo> getScannedList(FILE_STATUS fileStatus) {
         Map<String, FileInfo> tmp = new HashMap<>(fileInfoMap);
@@ -49,8 +50,9 @@ public class Workflow {
     }
 
     /**
-     * get the list of specific status. the elements will be removed from fileStatusList after called.
-     *
+     * get the list of specific status.
+     * After downloading, file will be added to fileStatusList.
+     * and the elements will be removed after called.
      * @param fileStatus : FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.PARSED,FILE_STATUS.DOWNLOADED
      * @return list of FileInfo which status is parameter 'fileStatus'
      */
@@ -71,10 +73,10 @@ public class Workflow {
     }
 
     /**
-     * get the scanned list from FTP Server (based on path)
-     *
+     * Execute the scanning thread. if the process is not ended when the method called,
+     * it returns old scanned list
      * @param agent
-     * @return String will be path of FileInfo
+     * @return Key will be filepath + filename
      */
     public Map<String, FileInfo> scan(Agent agent) {
         if (scanner == null) {
@@ -84,7 +86,6 @@ public class Workflow {
             Executors.newSingleThreadExecutor().submit(scanner);
         }
         if (fileInfoMap != null) {
-//            Map<String, FileInfo> scanListMap = new HashMap<>(fileInfoMap);
             return fileInfoMap;
         } else {
             logger.error("cannot get the scanList");
@@ -92,17 +93,30 @@ public class Workflow {
         }
     }
 
+    /**
+     * Execute download thread
+     * @param agent
+     * @param targetFile
+     * @param downloadPath
+     * @param fileType ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
+     */
     public void download(Agent agent, FileInfo targetFile, String downloadPath, Integer fileType) {
         Downloader downloader = new Downloader(targetFile, agent, downloadPath, fileType);
         Executors.newSingleThreadExecutor().submit(downloader);
     }
 
+    /**
+     * Execute download thread, and running parsing after downloading end
+     * @param targetFile
+     * @param agent
+     * @param downloadPath
+     * @param fileType ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
+     * @param parser
+     */
     public void downAndParse(FileInfo targetFile, Agent agent, String downloadPath, Integer fileType, Parser parser) {
         Downloader downloader = new Downloader(targetFile, agent, downloadPath, fileType, parser);
         Executors.newSingleThreadExecutor().submit(downloader);
     }
-
-
 
     /**
      * Scanner class is running the thread for scanning FTP Server folder.
@@ -131,13 +145,12 @@ public class Workflow {
 
             // scan the specific folder
             Map<String, FileInfo> WorkFileInfoMap = new HashMap<>();
-            long[] sizeAndCount = {0, 0};
-            agent.getSubFileInfo(WorkFileInfoMap, path, sizeAndCount);
+            agent.getSubFileInfo(WorkFileInfoMap, path, null);
             // update fileInfoList
             Map<String, FileInfo> tmpMap = new HashMap<>(fileInfoMap);
-            for (String filePath : WorkFileInfoMap.keySet()) {
-                if (!tmpMap.containsKey(filePath)) {
-                    fileInfoMap.put(filePath, WorkFileInfoMap.get(filePath));
+            for (String key : WorkFileInfoMap.keySet()) {
+                if (!tmpMap.containsKey(key)) {
+                    fileInfoMap.put(key, WorkFileInfoMap.get(key));
                 }
             }
             isCompleted = true;
@@ -173,7 +186,6 @@ public class Workflow {
             this.downloadPath = downloadPath;
             this.fileType = fileType;
             this.parser = parser;
-
         }
 
         @Override

@@ -25,6 +25,14 @@ public class FtpClient implements Agent {
     private String pwd;
     private FTPClient ftp;
 
+    /**
+     *
+     * @param ip FTP server Ip
+     * @param port FTP server port
+     * @param user FTP user Id
+     * @param pwd FTP user password
+     * @param commandListener true : commandListener mode (write every ftp command on console)
+     */
     public FtpClient(String ip,
                      int port,
                      String user,
@@ -38,6 +46,10 @@ public class FtpClient implements Agent {
         this.commandListener = commandListener;
     }
 
+    /**
+     * make connection with FTP server
+     * @return
+     */
     public boolean connect() {
         try {
             ftp.connect(ip, port);
@@ -65,6 +77,10 @@ public class FtpClient implements Agent {
         }
     }
 
+    /**
+     * check the connection is valid
+     * @return
+     */
     public boolean isConnected() {
         boolean chk = false;
         try {
@@ -76,7 +92,7 @@ public class FtpClient implements Agent {
     }
 
     /**
-     * set before connection
+     * set the connection timeout of FTP Client (set before connection)
      * @param connectTimeOut
      */
     public void setConnectTimeOut(int connectTimeOut) {
@@ -84,7 +100,7 @@ public class FtpClient implements Agent {
     }
 
     /**
-     * set before connection
+     * set the encoding type of FTP Client Connection (set before connection)
      * @param encoding
      */
     public void setEncoding(String encoding) {
@@ -93,8 +109,8 @@ public class FtpClient implements Agent {
 
 
     /**
+     * set the file type of FTP Server (set after connection)
      * @param fileType ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
-     * Connect first before setting file type
      */
     public void setFileType(int fileType) {
         //default type is ASCII(0)
@@ -117,6 +133,11 @@ public class FtpClient implements Agent {
         }
     }
 
+    /**
+     * get sub-folders information one depth under the path(parameter)
+     * @param path target folder path
+     * @return folder information map. key will be path + folderName
+     */
     public Map<String, FolderInfo> getSubFolderInfo(String path) {
         if (!isConnected()) {
             boolean connection = connect();
@@ -138,7 +159,7 @@ public class FtpClient implements Agent {
         for (FTPFile f : fileList) {
             if (f.isFile()) {
 
-            } else {
+            } else if(f.isDirectory()) {
                 String targetPath = String.format("%s/%s", path, f.getName());
                 long[] sizeAndNumFiles = {0, 0};
                 getSubFileInfo(
@@ -157,6 +178,16 @@ public class FtpClient implements Agent {
         return folderInfoMap;
     }
 
+    /**
+     * get sub-files information under the path.
+     * It contains all files in the sub-folders under the path.
+     * @param fileInfoMap  input is empty map. during the method, scanned file will be added.
+     *                     key will be path + filename
+     * @param path  target folder path
+     * @param sizeAndNumFiles for getting the size and file counts of getSubFolderInfo()
+     *                        long[0] : file size, long[1] : fileCount.
+     * @return
+     */
     public long[] getSubFileInfo(Map<String, FileInfo> fileInfoMap,
                                  String path,
                                  long[] sizeAndNumFiles) {
@@ -187,8 +218,10 @@ public class FtpClient implements Agent {
                                     FILE_STATUS.CREATING);
                     fileInfoMap.put(targetPath, fileInfo);
                 }
-                sizeAndNumFiles[0] += f.getSize();
-                sizeAndNumFiles[1] += 1;
+                if(sizeAndNumFiles!=null){
+                    sizeAndNumFiles[0] += f.getSize();
+                    sizeAndNumFiles[1] += 1;
+                }
             } else {
                 getSubFileInfo(fileInfoMap,
                         String.format("%s/%s", path, f.getName()),
@@ -198,6 +231,11 @@ public class FtpClient implements Agent {
         return sizeAndNumFiles;
     }
 
+    /**
+     * get the file list under the path (not all depth, only one depth)
+     * @param path target folder path
+     * @return list of scanned file information
+     */
     public List<FileInfo> listFiles(String path) {
         if (!isConnected()) {
             boolean connection = connect();
@@ -222,6 +260,13 @@ public class FtpClient implements Agent {
         return fileInfoList;
     }
 
+    /**
+     * download one file
+     * @param fileInfo
+     * @param downFilePath
+     * @param fileType ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
+     * @return downloaded file information (as File instance)
+     */
     public File downLoadFile(FileInfo fileInfo, String downFilePath,Integer fileType) {
         if (!isConnected()) {
             boolean connection = connect();
@@ -260,6 +305,9 @@ public class FtpClient implements Agent {
         return f;
     }
 
+    /**
+     * disconnect the FTP Client
+     */
     public void disconnect() {
         try {
             ftp.disconnect();
@@ -268,6 +316,11 @@ public class FtpClient implements Agent {
         }
     }
 
+    /**
+     * get FTP Server reply
+     * @param ftp
+     * @return
+     */
     private static String showServerReply(FTPClient ftp) {
         String[] replies = ftp.getReplyStrings();
         String ftpReply = "FTP Server : ";

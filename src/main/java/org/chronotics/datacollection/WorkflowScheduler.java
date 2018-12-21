@@ -32,7 +32,7 @@ public class WorkflowScheduler {
      *  running thread every "fixDelayString" millisecond
      *  if scanning is not finished, return the old-list(latest finished scanning output)
      */
-//    @Scheduled(fixedDelayString = "1000")
+    @Scheduled(fixedDelayString = "1000")
     public void workflowScanner(){
         if (workflow == null) {
             workflow = new Workflow(path);
@@ -57,7 +57,11 @@ public class WorkflowScheduler {
         }
 
     }
-    @Scheduled(fixedDelayString = "1000")
+
+    /**
+     *  Containing scanning, downloading process
+     */
+//    @Scheduled(fixedDelayString = "1000")
     public void workflowFull() {
         if (workflow == null) {
             workflow = new Workflow(path);
