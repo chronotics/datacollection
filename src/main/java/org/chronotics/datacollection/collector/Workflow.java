@@ -38,15 +38,12 @@ public class Workflow {
             return null;
         }
         Map<String, FileInfo> tmp = new HashMap<>(fileInfoMap);
-        System.out.println("tmp file size : "+tmp.size());
         if (fileStatus == null) {
-            System.out.println("fileStatus - null");
             return tmp;
         } else {
             Map<String, FileInfo> filterMap = new HashMap<>();
             for (Map.Entry<String, FileInfo> entry : tmp.entrySet()) {
                 if (entry.getValue().getStatus().equals(fileStatus.toString())) {
-
                     filterMap.put(entry.getKey(), entry.getValue());
                 }
             }
@@ -62,21 +59,14 @@ public class Workflow {
      * @param agent
      * @return Key will be filepath + filename
      */
-    public Map<String, FileInfo> scan(Agent agent) {
-        if (scanner == null) {
-            scanner = new Scanner(agent);
-            Executors.newSingleThreadExecutor().submit(scanner);
-            return fileInfoMap;
-        } else if (scanner.isCompleted()) {
-            System.out.println("scanner : is completed - true");
-            Executors.newSingleThreadExecutor().submit(scanner);
+
+    public Future<Object> scan(Agent agent) {
+        if(scanner==null){
+            scanner=new Scanner(agent);
         }
-        if (fileInfoMap != null) {
-            return fileInfoMap;
-        } else {
-            logger.error("the first scan is not started");
-            return null;
-        }
+        Future future=Executors.newSingleThreadExecutor().submit(scanner);
+        return future;
+
     }
 
     /**
@@ -109,47 +99,11 @@ public class Workflow {
     /**
      * Scanner class is running the thread for scanning FTP Server folder.
      */
-
-    public Future<Object> scanning(Agent agent){
-        Future<Object> future=Executors.newSingleThreadExecutor().submit(new Callable<Object>(){
-            @Override
-            public Boolean call(){
-                if (fileInfoMap == null) {
-                    fileInfoMap = new ConcurrentHashMap<>();
-                }
-                if (!agent.isConnected()) {
-                    logger.info("Scanner : agent is not connected..connecting");
-                    agent.connect();
-                } else {
-                    throw new IllegalStateException("Cannot CONNECT to FTP Server");
-                }
-
-                // scan the specific folder
-                Map<String, FileInfo> WorkFileInfoMap = new HashMap<>();
-                agent.getSubFileInfo(WorkFileInfoMap, path, null);
-                if(WorkFileInfoMap.size()==0){
-                    return false;
-                }
-                // update fileInfoList
-                Map<String, FileInfo> tmpMap = new HashMap<>(fileInfoMap);
-
-                for (String key : WorkFileInfoMap.keySet()) {
-                    if (!tmpMap.containsKey(key)) {
-                        fileInfoMap.put(key, WorkFileInfoMap.get(key));
-                    }
-                }
-                return true;
-            }
-        });
-        return future;
-    }
-
-
     private Scanner scanner = null;
 
     private class Scanner implements Callable<Object> {
         private Agent agent;
-        private boolean isCompleted = false;
+   //     private boolean isCompleted = false;
 
         public Scanner(Agent agent) {
             this.agent = agent;
@@ -157,7 +111,7 @@ public class Workflow {
 
         @Override
         public Object call() {
-            isCompleted = false;
+ //           isCompleted = false;
             if (fileInfoMap == null) {
                 fileInfoMap = new ConcurrentHashMap<>();
             }
@@ -178,13 +132,13 @@ public class Workflow {
                     fileInfoMap.put(key, WorkFileInfoMap.get(key));
                 }
             }
-            isCompleted = true;
+ //           isCompleted = true;
             return null;
         }
 
-        public boolean isCompleted() {
-            return isCompleted;
-        }
+//        public boolean isCompleted() {
+//            return isCompleted;
+//        }
     }
 
     /**
