@@ -8,9 +8,7 @@ import org.chronotics.pandora.java.log.Logger;
 import org.chronotics.pandora.java.log.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -19,7 +17,6 @@ public class Workflow {
 
     private ConcurrentHashMap<String, FileInfo> fileInfoMap;
     private Map<Agent, FileInfo> agentMap;  //  Agent, FileInfo for downloading
-    private CopyOnWriteArrayList<FileInfo> fileStatusList;
 //    private ConcurrentHashMap<String, Workflow> workflowMap;
 
     private String path;    // scanning start directory
@@ -35,14 +32,21 @@ public class Workflow {
      * @param fileStatus FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.PARSED,FILE_STATUS.DOWNLOADED
      * @return Key will be filepath + filename
      */
-    public Map<String, FileInfo> getScannedList(FILE_STATUS fileStatus) {
+    public Map<String, FileInfo> getStatusList(FILE_STATUS fileStatus) {
+        if(fileInfoMap==null){
+            logger.error("the first scan is not started");
+            return null;
+        }
         Map<String, FileInfo> tmp = new HashMap<>(fileInfoMap);
+        System.out.println("tmp file size : "+tmp.size());
         if (fileStatus == null) {
+            System.out.println("fileStatus - null");
             return tmp;
         } else {
             Map<String, FileInfo> filterMap = new HashMap<>();
             for (Map.Entry<String, FileInfo> entry : tmp.entrySet()) {
                 if (entry.getValue().getStatus().equals(fileStatus.toString())) {
+
                     filterMap.put(entry.getKey(), entry.getValue());
                 }
             }
@@ -50,29 +54,6 @@ public class Workflow {
         }
     }
 
-    /**
-     * get the list of specific status.
-     * After downloading, file will be added to fileStatusList.
-     * and the elements will be removed after called.
-     *
-     * @param fileStatus FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.PARSED,FILE_STATUS.DOWNLOADED
-     * @return list of FileInfo which status is parameter 'fileStatus'
-     */
-    public List<FileInfo> getFileStatusList(FILE_STATUS fileStatus) {
-        if (fileStatusList == null || fileStatusList.size() == 0) {
-            logger.error("downloading is not started");
-            return null;
-        }
-        List<FileInfo> ret = new ArrayList<>();
-        List<FileInfo> tmp = new ArrayList<>(fileStatusList);
-        for (FileInfo fileInfo : tmp) {
-            if (fileInfo.getStatus().equals(fileStatus.toString())) {
-                ret.add(fileInfo);
-                fileStatusList.remove(fileInfo);
-            }
-        }
-        return ret;
-    }
 
     /**
      * Execute the scanning thread. if the process is not ended when the method called,
@@ -85,13 +66,15 @@ public class Workflow {
         if (scanner == null) {
             scanner = new Scanner(agent);
             Executors.newSingleThreadExecutor().submit(scanner);
+            return fileInfoMap;
         } else if (scanner.isCompleted()) {
+            System.out.println("scanner : is completed - true");
             Executors.newSingleThreadExecutor().submit(scanner);
         }
         if (fileInfoMap != null) {
             return fileInfoMap;
         } else {
-            logger.error("cannot get the scanList");
+            logger.error("the first scan is not started");
             return null;
         }
     }
@@ -126,6 +109,42 @@ public class Workflow {
     /**
      * Scanner class is running the thread for scanning FTP Server folder.
      */
+
+    public Future<Object> scanning(Agent agent){
+        Future<Object> future=Executors.newSingleThreadExecutor().submit(new Callable<Object>(){
+            @Override
+            public Boolean call(){
+                if (fileInfoMap == null) {
+                    fileInfoMap = new ConcurrentHashMap<>();
+                }
+                if (!agent.isConnected()) {
+                    logger.info("Scanner : agent is not connected..connecting");
+                    agent.connect();
+                } else {
+                    throw new IllegalStateException("Cannot CONNECT to FTP Server");
+                }
+
+                // scan the specific folder
+                Map<String, FileInfo> WorkFileInfoMap = new HashMap<>();
+                agent.getSubFileInfo(WorkFileInfoMap, path, null);
+                if(WorkFileInfoMap.size()==0){
+                    return false;
+                }
+                // update fileInfoList
+                Map<String, FileInfo> tmpMap = new HashMap<>(fileInfoMap);
+
+                for (String key : WorkFileInfoMap.keySet()) {
+                    if (!tmpMap.containsKey(key)) {
+                        fileInfoMap.put(key, WorkFileInfoMap.get(key));
+                    }
+                }
+                return true;
+            }
+        });
+        return future;
+    }
+
+
     private Scanner scanner = null;
 
     private class Scanner implements Callable<Object> {
@@ -138,6 +157,7 @@ public class Workflow {
 
         @Override
         public Object call() {
+            isCompleted = false;
             if (fileInfoMap == null) {
                 fileInfoMap = new ConcurrentHashMap<>();
             }
@@ -195,10 +215,6 @@ public class Workflow {
 
         @Override
         public Object call() throws Exception {
-            if (fileStatusList == null) {
-                fileStatusList = new CopyOnWriteArrayList<>();
-            }
-            fileStatusList.add(targetFile);
             if (!agent.isConnected()) {
                 logger.info("Downloader : agent is not connected..connecting");
                 agent.connect();
@@ -214,10 +230,10 @@ public class Workflow {
             File file = agent.downLoadFile(targetFile, downloadPath, fileType);
             if (parser != null && file != null) {
                 targetFile.setStatus(FILE_STATUS.PARSING.toString());
-                boolean parseChk=parser.parse(file);
-                if(parseChk){
-                   targetFile.setStatus(FILE_STATUS.PARSED.toString());
-                }else{
+                boolean parseChk = parser.parse(file);
+                if (parseChk) {
+                    targetFile.setStatus(FILE_STATUS.PARSED.toString());
+                } else {
                     targetFile.setStatus(FILE_STATUS.ERROR.toString());
                 }
             }

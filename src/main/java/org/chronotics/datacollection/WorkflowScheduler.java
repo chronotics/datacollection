@@ -43,12 +43,19 @@ public class WorkflowScheduler {
         /**
          *  Scanning
          */
+    //    System.out.println("scanner is completed : "+workflow.scannerStatusforTest());
         Map<String, FileInfo> scanListMap = workflow.scan(scanFtpClient);
-        if (scanListMap == null) {
-            logger.info("scanning is not finished yet");
-            return;
+
+        int i=0;
+        if(scanListMap!=null){
+            for(String key : scanListMap.keySet()){
+                System.out.println(scanListMap.get(key));
+                if(i==10){break;}
+                i++;
+            }
         }
 
+        System.out.println("!~~~~~~~~~~~~~~~~~~~");
     }
 
     /**
@@ -56,7 +63,7 @@ public class WorkflowScheduler {
      * running thread every "fixDelayString" millisecond
      * Containing scanning, downloading process
      */
-    @Scheduled(fixedDelayString = "1000")
+    //   @Scheduled(fixedDelayString = "1000")
     public void workflowFull() {
         if (workflow == null) {
             workflow = new Workflow(path);
@@ -84,20 +91,24 @@ public class WorkflowScheduler {
         /**
          *  get the downloaded file list
          */
-        List<FileInfo> downloadedList = workflow.getFileStatusList(FILE_STATUS.DOWNLOADED);
-
-
+        Map<String, FileInfo> downloadedList = workflow.getStatusList(FILE_STATUS.DOWNLOADED);
+        System.out.println("downloaded list ~~");
+        for (String key : downloadedList.keySet()) {
+            System.out.println(downloadedList.get(key));
+        }
 
     }
 
     public List<FileInfo> downloadListSetting(Map<String, FileInfo> scanListMap) {
         List<FileInfo> downloadList = new ArrayList<>();
+        System.out.println("download list ~");
         int i = 1;
         for (FileInfo fileInfo : scanListMap.values()) {
             if (!fileInfo.getStatus().equals(FILE_STATUS.DOWNLOADED.toString())
                     && !fileInfo.getStatus().equals(FILE_STATUS.DOWNLOADING.toString())) {
                 downloadList.add(fileInfo);
-                if (i == 10) {
+                System.out.println(fileInfo);
+                if (i == 20) {
                     break;
                 }
                 i++;
