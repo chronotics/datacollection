@@ -20,7 +20,7 @@ public interface Agent {
 
     public List<FileInfo> listFiles(String path);
 
-    public File downLoadFile(FileInfo fileInfo, String downFilePath,Integer fileType);
+    public Boolean downLoadFile(FileInfo fileInfo, String downFilePath,Integer fileType);
 
     public void disconnect();
 }

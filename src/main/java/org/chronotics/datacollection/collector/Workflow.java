@@ -7,7 +7,6 @@ import org.chronotics.datacollection.parser.Parser;
 import org.chronotics.pandora.java.log.Logger;
 import org.chronotics.pandora.java.log.LoggerFactory;
 
-import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -17,7 +16,6 @@ public class Workflow {
 
     private ConcurrentHashMap<String, FileInfo> fileInfoMap;
     private Map<Agent, FileInfo> agentMap;  //  Agent, FileInfo for downloading
-//    private ConcurrentHashMap<String, Workflow> workflowMap;
 
     private String path;    // scanning start directory
 
@@ -29,15 +27,16 @@ public class Workflow {
      * get scanned list in fileInfoMap. get all files in specific status.
      * if fileStatus is null, get the total fileInfoMap
      *
-     * @param fileStatus FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.PARSED,FILE_STATUS.DOWNLOADED
+     * @param fileStatus FILE_STATUS like FILE_STATUS.ERROR,FILE_STATUS.IMPORTED,FILE_STATUS.DOWNLOADED
      * @return Key will be filepath + filename
      */
     public Map<String, FileInfo> getStatusList(FILE_STATUS fileStatus) {
-        if(fileInfoMap==null){
+        if (fileInfoMap == null) {
             logger.error("the first scan is not started");
             return null;
         }
         Map<String, FileInfo> tmp = new HashMap<>(fileInfoMap);
+
         if (fileStatus == null) {
             return tmp;
         } else {
@@ -51,22 +50,18 @@ public class Workflow {
         }
     }
 
-
     /**
-     * Execute the scanning thread. if the process is not ended when the method called,
-     * it returns old scanned list
+     * Execute scanner Thread
      *
      * @param agent
-     * @return Key will be filepath + filename
+     * @return
      */
-
-    public Future<Object> scan(Agent agent) {
-        if(scanner==null){
-            scanner=new Scanner(agent);
+    public Future scan(Agent agent) {
+        if (scanner == null) {
+            scanner = new Scanner(agent);
         }
-        Future future=Executors.newSingleThreadExecutor().submit(scanner);
+        Future<Object> future = Executors.newSingleThreadExecutor().submit(scanner);
         return future;
-
     }
 
     /**
@@ -77,10 +72,16 @@ public class Workflow {
      * @param downloadPath
      * @param fileType     ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
      */
-    public void download(Agent agent, FileInfo targetFile, String downloadPath, Integer fileType) {
+    public Future download(Agent agent, FileInfo targetFile, String downloadPath, Integer fileType) {
         Downloader downloader = new Downloader(targetFile, agent, downloadPath, fileType);
-        Executors.newSingleThreadExecutor().submit(downloader);
+        Future future = Executors.newSingleThreadExecutor().submit(downloader);
+        return future;
     }
+//    public void download(Agent agent, FileInfo targetFile, String downloadPath, Integer fileType) {
+//        Downloader downloader = new Downloader(targetFile, agent, downloadPath, fileType);
+//        Future future = Executors.newSingleThreadExecutor().submit(downloader);
+//
+//    }
 
     /**
      * Execute download thread, and running parsing after downloading end
@@ -103,7 +104,6 @@ public class Workflow {
 
     private class Scanner implements Callable<Object> {
         private Agent agent;
-   //     private boolean isCompleted = false;
 
         public Scanner(Agent agent) {
             this.agent = agent;
@@ -111,7 +111,6 @@ public class Workflow {
 
         @Override
         public Object call() {
- //           isCompleted = false;
             if (fileInfoMap == null) {
                 fileInfoMap = new ConcurrentHashMap<>();
             }
@@ -125,6 +124,7 @@ public class Workflow {
             // scan the specific folder
             Map<String, FileInfo> WorkFileInfoMap = new HashMap<>();
             agent.getSubFileInfo(WorkFileInfoMap, path, null);
+
             // update fileInfoList
             Map<String, FileInfo> tmpMap = new HashMap<>(fileInfoMap);
             for (String key : WorkFileInfoMap.keySet()) {
@@ -132,13 +132,16 @@ public class Workflow {
                     fileInfoMap.put(key, WorkFileInfoMap.get(key));
                 }
             }
- //           isCompleted = true;
-            return null;
+//            System.out.println("fileInfoMap");
+//            int k=0;
+//            for(String key : fileInfoMap.keySet()){
+//                System.out.println(fileInfoMap.get(key));
+//                if(k==10){break;}
+//                k++;
+//            }
+            return 0;
         }
 
-//        public boolean isCompleted() {
-//            return isCompleted;
-//        }
     }
 
     /**
@@ -181,18 +184,23 @@ public class Workflow {
 
             agentMap.put(agent, targetFile);
             targetFile.setStatus(FILE_STATUS.DOWNLOADING.toString());
-            File file = agent.downLoadFile(targetFile, downloadPath, fileType);
-            if (parser != null && file != null) {
-                targetFile.setStatus(FILE_STATUS.PARSING.toString());
-                boolean parseChk = parser.parse(file);
+            Boolean downChk = agent.downLoadFile(targetFile, downloadPath, fileType);
+            if (downChk) {
+                targetFile.setStatus(FILE_STATUS.DOWNLOADED.toString());
+            } else {
+                targetFile.setStatus(FILE_STATUS.ERROR.toString());
+            }
+            if (parser != null) {
+                targetFile.setStatus(FILE_STATUS.IMPORTING.toString());
+                boolean parseChk = parser.parse(targetFile);
                 if (parseChk) {
-                    targetFile.setStatus(FILE_STATUS.PARSED.toString());
+                    targetFile.setStatus(FILE_STATUS.IMPORTED.toString());
                 } else {
                     targetFile.setStatus(FILE_STATUS.ERROR.toString());
                 }
             }
             agentMap.remove(agent);
-            return null;
+            return targetFile;
         }
     }
 

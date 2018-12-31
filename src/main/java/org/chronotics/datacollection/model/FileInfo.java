@@ -8,8 +8,8 @@ public class FileInfo {
         CREATING("CREATING"),
         DOWNLOADING("DOWNLOADING"),
         DOWNLOADED("DOWNLOADED"),
-        PARSING("PARSING"),
-        PARSED("IMPORTED"),
+        IMPORTING("IMPORTING"),
+        IMPORTED("IMPORTED"),
         ERROR("ERROR");
 
         private String name;

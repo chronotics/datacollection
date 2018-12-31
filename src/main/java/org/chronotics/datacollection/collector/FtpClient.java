@@ -275,7 +275,7 @@ public class FtpClient implements Agent {
      * @param fileType     ASCII(0), EBCDIC(1), BINARY(2), LOCAL(3)
      * @return downloaded file information (as File instance)
      */
-    public File downLoadFile(FileInfo fileInfo, String downFilePath, Integer fileType) {
+    public Boolean downLoadFile(FileInfo fileInfo, String downFilePath, Integer fileType) {
         if (!isConnected()) {
             boolean connection = connect();
             if (!connection) {
@@ -291,17 +291,15 @@ public class FtpClient implements Agent {
         if (!dir.exists()) {
             dir.mkdirs();
         }
+        boolean result=false;
         try {
             OutputStream fos = new BufferedOutputStream(new FileOutputStream(f));
-            boolean result = ftp.retrieveFile(target, fos);
+            result = ftp.retrieveFile(target, fos);
             if (!result || !FTPReply.isPositiveCompletion(ftp.getReplyCode())) {
                 logger.error("download fail");
                 // The ftpClient is an inconsistent state. Must close the stream
                 // which in turn will logout and disconnect from FTP server
-                fileInfo.setStatus(FILE_STATUS.ERROR.toString());
-                fos.close();
             } else {
-                fileInfo.setStatus(FILE_STATUS.DOWNLOADED.toString());
                 logger.info(fileInfo.getName() + ": download success!");
             }
             fos.close();
@@ -310,8 +308,9 @@ public class FtpClient implements Agent {
         } catch (IOException ex) {
             logger.error("Cannot download the file from FTP Server ");
         }
+
         disconnect();
-        return f;
+        return result;
     }
 
     /**
